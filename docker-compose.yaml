@@ -1,0 +1,87 @@
+version: "3.7"
+
+services:
+  account:
+    build:
+      context: .
+      dockerfile: ./account/app.dockerfile
+    depends_on:
+      - account_db
+    environment:
+      DATABASE_URL: postgres://postgres:Tejas@account_db:5432/go-microservices?sslmode=disable
+    restart: on-failure
+
+  catalog:
+    build:
+      context: .
+      dockerfile: ./catalog/app.dockerfile
+    depends_on:
+      - catalog_db
+    environment:
+      DATABASE_URL: http://catalog_db:9200
+    restart: on-failure
+
+  order:
+    build:
+      context: .
+      dockerfile: ./order/app.dockerfile
+    depends_on:
+      - order_db
+    environment:
+      DATABASE_URL: postgres://postgres:Tejas@order_db:5432/go-microservices?sslmode=disable
+      ACCOUNT_SERVICE_URL: account:8080
+      CATALOG_SERVICE_URL: catalog:8080
+    restart: on-failure
+  
+  graphql:
+    build:
+      context: .
+      dockerfile: ./graphql/app.dockerfile
+    ports:
+      - 8000:8080
+    depends_on:
+      - account
+      - catalog
+    environment:
+      ACCOUNT_SERVICE_URL: account:8080
+      CATALOG_SERVICE_URL: catalog:8080
+      ORDER_SERVICE_URL: order:8080
+    restart: on-failure
+
+  account_db:
+    build:
+      context: ./account
+      dockerfile: ./db.dockerfile
+    environment:
+      POSTGRES_DB: go-microservices
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: Tejas
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  catalog_db:
+    image: docker.elastic.co/elasticsearch/elasticsearch:6.2.4
+    environment:
+      ES_JAVA_OPTS: -Xms1g -Xmx1g
+      discovery.type: single-node
+    ports:
+    - "9200:9200"  
+
+  order_db:
+    build:
+      context: ./order
+      dockerfile: ./db.dockerfile
+    environment:
+      POSTGRES_DB: go-microservices
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: Tejas
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
