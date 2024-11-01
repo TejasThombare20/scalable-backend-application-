@@ -1,4 +1,4 @@
-# Microservices Project
+# Scalable Microservices Project
 
 This project is a microservices-based application built using Docker and Docker Compose. It consists of multiple services: `account`, `catalog`, `order`, `graphql`, and corresponding databases (`account_db`, `catalog_db`, `order_db`). Each service is containerized and can be orchestrated using Docker Compose.
 
